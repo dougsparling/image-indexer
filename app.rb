@@ -9,7 +9,7 @@ directory = ARGV[0] || Dir.pwd
 indexer = ImageIndexer.new(directory)
 
 get '/' do
-  erb :index, locals: { query: nil, results: [] }
+  erb :index, locals: { query: nil, results: [], directory: directory }
 end
 
 get '/search' do
@@ -18,7 +18,7 @@ get '/search' do
   if query && !query.empty?
     results = indexer.search_images_query(query)
   end
-  erb :index, locals: { query: query, results: results }
+  erb :index, locals: { query: query, results: results, directory: directory }
 end
 
 # New route to serve images by ID
@@ -35,6 +35,9 @@ get '/image/:id' do |id|
                      when '.webp' then 'image/webp'
                      else 'application/octet-stream' # Fallback for unknown types
                      end
+      headers 'Cache-Control' => 'no-cache, no-store, must-revalidate'
+      headers 'Pragma' => 'no-cache'
+      headers 'Expires' => '0'
       send_file image_path, :type => content_type, :disposition => 'inline'
     else
       status 404
@@ -85,7 +88,7 @@ __END__
   </div>
 
   <% if results.any? %>
-    <h2>Search Results for "<%= query %>"</h2>
+    <h2>Results for "<%= query %>" in <%= directory %></h2>
     <div class="results-container">
       <div class="image-grid">
         <% results.each do |item| %>

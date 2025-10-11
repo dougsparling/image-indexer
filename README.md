@@ -32,3 +32,10 @@ bundle exec ruby app.rb /path/to/your/images
 
 Browse to http://localhost:4567 to search and view images:
 
+![example.png](example.png)
+
+## Ideas
+
+* use other Moondream capabilities like query "list of objects, comma-delimited" to get additional semi-structured data about the scene
+* Moondream 3 when it hits Mac
+* better text matching than out of box FTS5 (stemming, etc.)

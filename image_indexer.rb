@@ -26,9 +26,10 @@ class ImageIndexer
     end
   end
 
-  def search_images_query(query)
+  def search_images_query(query, results = nil)
     open_db unless @db # Ensure db is open if not already
-    @db.execute("SELECT T1.id, T1.path, T1.caption FROM images AS T1 JOIN image_captions AS T2 ON T1.id = T2.rowid WHERE T2.caption MATCH ? ORDER BY rank LIMIT 5", query)
+    limit = if(results.nil?) then "" else "LIMIT #{results}" end
+    @db.execute("SELECT T1.id, T1.path, T1.caption FROM images AS T1 JOIN image_captions AS T2 ON T1.id = T2.rowid WHERE T2.caption MATCH ? ORDER BY rank #{limit}", query)
   end
 
   def find_image_by_id(id)
@@ -190,7 +191,7 @@ class ImageIndexer
     end
 
     puts "Searching for '#{query}'..."
-    results = search_images_query(query)
+    results = search_images_query(query, 5)
 
     if results.empty?
       puts "No results found for '#{query}'."
