@@ -1,9 +1,8 @@
 require 'sinatra'
-require 'uri' # Required for URI.encode_www_form_component
 require_relative 'image_indexer'
 
-set :bind, '0.0.0.0' # Listen on all interfaces
-set :port, 4567 # Default Sinatra port
+set :bind, '0.0.0.0'
+set :port, 4567
 
 directory = ARGV[0] || Dir.pwd
 indexer = ImageIndexer.new(directory)
@@ -21,24 +20,16 @@ get '/search' do
   erb :index, locals: { query: query, results: results, directory: directory }
 end
 
-# New route to serve images by ID
 get '/image/:id' do |id|
   image_data = indexer.find_image_by_id(id.to_i)
   if image_data
-    image_path = image_data['path']
-    if File.exist?(image_path) && File.file?(image_path)
-      content_type = case File.extname(image_path).downcase
-                     when '.png' then 'image/png'
-                     when '.jpg', '.jpeg' then 'image/jpeg'
-                     when '.gif' then 'image/gif'
-                     when '.bmp' then 'image/bmp'
-                     when '.webp' then 'image/webp'
-                     else 'application/octet-stream' # Fallback for unknown types
-                     end
+    path = image_data['path']
+    if File.exist?(path) && File.file?(path)
+      content_type = get_content_type(path)
       headers 'Cache-Control' => 'no-cache, no-store, must-revalidate'
       headers 'Pragma' => 'no-cache'
       headers 'Expires' => '0'
-      send_file image_path, :type => content_type, :disposition => 'inline'
+      send_file path, :type => content_type, :disposition => 'inline'
     else
       status 404
       "Image file not found for ID: #{id}"
@@ -56,6 +47,19 @@ get '/fullscreen/:id' do |id|
   else
     status 404
     "Image not found for ID: #{id}"
+  end
+end
+
+helpers do
+  def get_content_type(path)
+    case File.extname(path).downcase
+    when '.png' then 'image/png'
+    when '.jpg', '.jpeg' then 'image/jpeg'
+    when '.gif' then 'image/gif'
+    when '.bmp' then 'image/bmp'
+    when '.webp' then 'image/webp'
+    else 'application/octet-stream' # Fallback for unknown types
+    end
   end
 end
 
@@ -116,7 +120,7 @@ __END__
     body {
       font-family: sans-serif;
       margin: 0;
-      background-color: #fff; /* Changed to white */
+      background-color: #fff;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -126,7 +130,7 @@ __END__
     }
     .header {
       width: 100%;
-      background-color: rgba(255, 255, 255, 0.7); /* Adjusted for contrast */
+      background-color: rgba(255, 255, 255, 0.7);
       padding: 10px 20px;
       display: flex;
       align-items: center;
@@ -136,16 +140,19 @@ __END__
       z-index: 10;
     }
     .back-arrow {
-      color: black; /* Adjusted for contrast */
-      font-size: 24px;
+      color: black; 
+      font-size: 36px;
       text-decoration: none;
       margin-right: 20px;
     }
     .caption {
-      color: black; /* Adjusted for contrast */
+      color: black;
       font-size: 18px;
       flex-grow: 1;
       text-align: center;
+      white-space: normal; 
+      word-wrap: break-word;
+      max-width: calc(100% - 80px);
     }
     .fullscreen-image-container {
       display: flex;

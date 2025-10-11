@@ -86,8 +86,8 @@ class ImageIndexer
     image_paths
   end
 
-  def get_caption_from_api(image_path)
-    image_data = File.binread(image_path)
+  def get_caption_from_api(path)
+    image_data = File.binread(path)
     base64_image = Base64.strict_encode64(image_data)
 
     http = Net::HTTP.new(MOONDREAM_API_URL.host, MOONDREAM_API_URL.port)
@@ -105,11 +105,11 @@ class ImageIndexer
       json_response = JSON.parse(response.body)
       json_response['caption']
     else
-      puts "Error getting caption for #{image_path}: #{response.code} - #{response.message}"
+      puts "Error getting caption for #{path}: #{response.code} - #{response.message}"
       nil
     end
   rescue StandardError => e
-    puts "Exception getting caption for #{image_path}: #{e.message}"
+    puts "Exception getting caption for #{path}: #{e.message}"
     nil
   end
 
@@ -117,52 +117,42 @@ class ImageIndexer
     open_db
     create_schema
 
-    existing_paths = @db.execute("SELECT path FROM images").map { |row| row['path'] }
-    # Ensure the database is clean if schema changed
-    # This is a temporary measure for development, in production you'd handle schema migrations
-    if @db.execute("PRAGMA table_info(images)").none? { |col| col['name'] == 'id' }
-      puts "Database schema changed. Deleting existing database to recreate with new schema."
-      @db.close
-      File.delete(File.join(@directory, DB_NAME))
-      open_db # Reopen after deletion
-      create_schema # Recreate schema
-      existing_paths = [] # No existing paths after recreation
-    end
-    all_image_paths = find_images
+    indexed_paths = @db.execute("SELECT path FROM images").map { |row| row['path'] }
+    all_paths = find_images
     
-    images_to_process = all_image_paths.reject { |path| existing_paths.include?(path) }
-    total_new_images = images_to_process.length
+    to_process = all_paths.reject { |path| indexed_paths.include?(path) }
+    total_new = to_process.length
     
     processed_count = 0
     total_time_spent = 0.0
 
-    puts "Found #{all_image_paths.length} images in total."
-    puts "Starting indexing of #{total_new_images} new images..."
+    puts "Found #{all_paths.length} images in total."
+    puts "Starting indexing of #{total_new} new images..."
 
-    all_image_paths.each do |image_path|
-      if existing_paths.include?(image_path)
-        puts "Skipping #{image_path}, already indexed."
+    all_paths.each do |path|
+      if indexed_paths.include?(path)
+        puts "Skipping #{path}, already indexed."
       else
         processed_count += 1
         
         start_time = Time.now
-        puts "Processing image #{processed_count}/#{total_new_images}: #{image_path}..."
-        caption = get_caption_from_api(image_path)
+        puts "Processing image #{processed_count}/#{total_new}: #{path}..."
+        caption = get_caption_from_api(path)
         end_time = Time.now
         
         api_call_time = end_time - start_time
         total_time_spent += api_call_time
 
         if caption
-          @db.execute("INSERT INTO images (path, caption) VALUES (?, ?)", [image_path, caption])
+          @db.execute("INSERT INTO images (path, caption) VALUES (?, ?)", [path, caption])
           puts "  Caption saved: #{caption}"
         else
-          puts "  Failed to get caption for #{image_path}"
+          puts "  Failed to get caption for #{path}"
         end
 
         if processed_count > 0 # Avoid division by zero
           avg_time_per_image = total_time_spent / processed_count
-          remaining_images = total_new_images - processed_count
+          remaining_images = total_new - processed_count
           estimated_remaining_time = avg_time_per_image * remaining_images
           estimated_remaining_minutes = estimated_remaining_time / 60.0
 
@@ -184,11 +174,12 @@ class ImageIndexer
       exit 1
     end
 
-    open_db
     unless File.exist?(File.join(@directory, DB_NAME))
       puts "Database not found. Please run in 'index' mode first."
       exit 1
     end
+
+    open_db
 
     puts "Searching for '#{query}'..."
     results = search_images_query(query, 5)
