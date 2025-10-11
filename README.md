@@ -4,6 +4,8 @@ This Ruby script provides a command-line tool to caption images in a specified d
 
 ## How to Use
 
+First, install and run [Moondream Station](https://docs.moondream.ai/station) (or otherwise host the API locally).
+
 ### Indexing Images
 
 To index images in a directory, run the script with the `index` command followed by the path to the directory containing your images.
@@ -12,6 +14,8 @@ To index images in a directory, run the script with the `index` command followed
 bundle exec ruby image_indexer.rb index /path/to/your/images
 ```
 
+This will use the local Moondream API to provide the captions, and they will be saved to a file called `.image-indexer.db` in the target directory.
+
 ### Searching Captions
 
 To search through the indexed captions, use the `search` command followed by your search query.
@@ -19,3 +23,12 @@ To search through the indexed captions, use the `search` command followed by you
 ```bash
 bundle exec ruby image_indexer.rb search "your search query"
 ```
+
+Or run the included web server:
+
+```bash
+bundle exec ruby app.rb /path/to/your/images
+```
+
+Browse to http://localhost:4567 to search and view images:
+
