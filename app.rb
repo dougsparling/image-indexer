@@ -15,7 +15,7 @@ get '/search' do
   query = params[:query]
   results = []
   if query && !query.empty?
-    results = indexer.search_images_query(query)
+    results = indexer.search_images_query(query, 100)
   end
   erb :index, locals: { query: query, results: results, directory: directory }
 end
@@ -170,7 +170,7 @@ __END__
 </head>
 <body>
   <div class="header">
-    <a href="/" class="back-arrow">&#8592;</a>
+    <a href="javascript:history.back()" class="back-arrow">&#8592;</a>
     <span class="caption"><%= image['caption'] %></span>
   </div>
   <div class="fullscreen-image-container">
