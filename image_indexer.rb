@@ -57,7 +57,7 @@ class ImageIndexer
     SQL
     # Create FTS5 table for captions
     @db.execute <<-SQL
-      CREATE VIRTUAL TABLE IF NOT EXISTS image_captions USING fts5(caption, content='images', content_rowid='id');
+      CREATE VIRTUAL TABLE IF NOT EXISTS image_captions USING fts5(caption, content='images', content_rowid='id', tokenize='porter');
     SQL
     # Create triggers to keep FTS table in sync
     @db.execute <<-SQL
